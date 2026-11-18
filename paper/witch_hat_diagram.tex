@@ -1,0 +1,48 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
+
+\begin{document}
+% one place to change the grey used for the axis, ticks and braces
+\colorlet{rulegrey}{black!65}
+
+\begin{tikzpicture}[
+  rule/.style  = {thin, rulegrey},
+  lod/.style   = {rulegrey, line width=1pt, line cap=round,
+                  dash pattern=on 0pt off 3.2pt},
+  traj/.style  = {line width=1.1pt, line cap=round, line join=round, black},
+  brace/.style = {rule, decorate,
+                  decoration={brace, mirror, amplitude=5pt, raise=3pt}},
+  lab/.style   = {text=black, font=\normalsize, inner sep=1pt},
+  lodlab/.style= {lab, text=rulegrey, anchor=west, xshift=2pt},
+]
+
+%% ---- shape parameters (edit these) -------------------------------
+\def\Dp{1.6}    % duration of the proliferation phase
+\def\Dc{6.0}    % duration of the clearance phase
+\def\Vp{3.4}    % peak log concentration above the LOD
+\def\Run{1.4}   % flat run of the trajectory outside the infection
+\def\Pad{1.0}   % extra LOD line beyond the trajectory
+%% ------------------------------------------------------------------
+
+% limit-of-detection line (omega = 0), labelled at its right end
+\draw[lod] (-\Dp-\Run-\Pad, 0) -- (\Dc+\Run+\Pad, 0)
+  node[lodlab] {L.O.D};
+
+% trajectory: flat, proliferation, clearance, flat
+\draw[traj] (-\Dp-\Run, 0) -- (-\Dp, 0) -- (0, \Vp) -- (\Dc, 0) -- (\Dc+\Run, 0);
+
+% peak level and V label
+\draw[rule] (-0.25, \Vp) -- (0.25, \Vp);
+\node[lab, anchor=south west] at (0.3, \Vp) {$V$};
+
+% tick and label at the recentred peak time t = 0
+\draw[rule] (0, -0.11) -- (0, 0.11);
+\node[lab, anchor=north] at (0, -0.5) {$0$};
+
+% phase durations
+\draw[brace] (-\Dp, 0) -- (0, 0) node[lab, midway, below=9pt] {$\Delta_p$};
+\draw[brace] (0, 0) -- (\Dc, 0) node[lab, midway, below=9pt] {$\Delta_c$};
+
+\end{tikzpicture}
+\end{document}

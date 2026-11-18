@@ -1,0 +1,173 @@
+% Plate diagram for the witch-hat parameterization in src/witch_toy.stan.
+%
+% Replaces the slope-and-breakpoint form shown in plate_diagram.tex, whose
+% nodes (mu_alpha, mu_beta1, mu_beta2, mu_psi) match src/viral_bhm.stan.
+%
+% Correspondence to src/witch_toy.stan, in STATISTICAL form -- the .stan file
+% writes each of these non-centered, which is a sampler implementation detail
+% and is deliberately not drawn:
+%
+%   V^(i)        ~ Lognormal(log mu_V,      sigma_V / mu_V)
+%   delta_p^(i)  ~ Lognormal(log mu_dp,     sigma_dp / mu_dp)
+%   delta_c^(i)  ~ Lognormal(log mu_dc,     sigma_dc / mu_dc)
+%   psi^(i)      ~ Uniform(0, s^(i))
+%   Y_t^(i)      ~ Normal(m(x_t^(i) - psi^(i)), sigma_eps)
+%
+% where m(.) is the witch hat, rising over delta_p to a peak of V and falling
+% over delta_c, and 0 outside that window.
+%
+% Two structural departures from plate_diagram.tex:
+%
+%   1. psi carries NO population hierarchy. It is a registration nuisance
+%      whose flat prior runs over each individual's own record span, so its
+%      parent is the observed span s^(i) (shaded, known) rather than a
+%      mu/sigma pair.
+%   2. sigma_eps is a SINGLE GLOBAL scalar, so it sits outside the subject
+%      plate. The old figure's per-subject rho, with hyperparameters mu_rho
+%      and sigma_rho, has no counterpart anywhere in src/*.stan.
+
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,calc,shapes.geometric}
+
+\begin{document}
+
+\begin{tikzpicture}[
+    >=stealth,
+    latent/.style={
+        draw,
+        shape=ellipse,
+        minimum width=1.2cm,
+        minimum height=1cm
+    },
+    obs/.style={
+        draw,
+        shape=ellipse,
+        fill=gray!25,
+        minimum width=1.2cm,
+        minimum height=1cm
+    },
+    hyper/.style={
+        draw,
+        rectangle,
+        minimum width=1.0cm,
+        minimum height=0.6cm
+    },
+    known/.style={
+        draw,
+        rectangle,
+        fill=gray!25,
+        minimum width=1.0cm,
+        minimum height=0.6cm
+    },
+    plate/.style={
+        draw,
+        dashed,
+        rounded corners,
+        inner sep=0.5cm
+    }
+]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Population level
+%%
+%% Each (mu, sigma) pair governs a lognormal over the individual values:
+%% mu is the median and sigma the natural-scale spread, converted to the
+%% log-scale multiplier sigma/mu inside the model.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node[hyper] (muV) {$\mu_V$};
+\node[hyper,right=0.6cm of muV] (sV) {$\sigma_V$};
+
+\node[hyper,right=2.4cm of sV] (mudp) {$\mu_{\Delta_p}$};
+\node[hyper,right=0.6cm of mudp] (sdp) {$\sigma_{\Delta_p}$};
+
+\node[hyper,right=2.4cm of sdp] (mudc) {$\mu_{\Delta_c}$};
+\node[hyper,right=0.6cm of mudc] (sdc) {$\sigma_{\Delta_c}$};
+
+\coordinate (Vmid)  at ($(muV)!0.5!(sV)$);
+\coordinate (dpmid) at ($(mudp)!0.5!(sdp)$);
+\coordinate (dcmid) at ($(mudc)!0.5!(sdc)$);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Individual level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node[latent,below=1.8cm of Vmid]  (V)  {$V^{(i)}$};
+\node[latent,below=1.8cm of dpmid] (dp) {$\Delta_p^{(i)}$};
+\node[latent,below=1.8cm of dcmid] (dc) {$\Delta_c^{(i)}$};
+
+% psi has no mu/sigma parents; its support is the individual's record span.
+\node[latent,right=2.4cm of dc] (psi)  {$\psi^{(i)}$};
+\node[known,right=1.2cm of psi] (span) {$s^{(i)}$};
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Observation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\coordinate (ymid) at ($(V)!0.5!(psi)$);
+\node[obs,below=3cm of ymid] (y) {$Y_t^{(i)}$};
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Observation noise: one global scalar, outside the subject plate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node[hyper,left=3.2cm of V] (seps) {$\sigma_\epsilon$};
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Edges
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\draw[->] (muV)  -- (V);
+\draw[->] (sV)   -- (V);
+
+\draw[->] (mudp) -- (dp);
+\draw[->] (sdp)  -- (dp);
+
+\draw[->] (mudc) -- (dc);
+\draw[->] (sdc)  -- (dc);
+
+\draw[->] (span) -- (psi);
+
+\draw[->] (V)   -- (y);
+\draw[->] (dp)  -- (y);
+\draw[->] (dc)  -- (y);
+\draw[->] (psi) -- (y);
+
+\draw[->] (seps) -- (y);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Plates
+%%
+%% Record length varies between individuals, so the inner index runs to
+%% T^(i) rather than to a common T.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node[
+    plate,
+    fit=(y),
+    inner xsep=0.8cm,
+    inner ysep=0.8cm
+] (timeplate) {};
+
+\node[
+    anchor=south east,
+    inner sep=2pt
+] at ($(timeplate.south east)+(-2pt,2pt)$)
+{$t=1,\ldots,T^{(i)}$};
+
+\node[
+    plate,
+    fit=(V)(dp)(dc)(psi)(span)(timeplate)
+] (subjectplate) {};
+
+\node[
+    anchor=south east,
+    inner sep=2pt
+] at ($(subjectplate.south east)+(-2pt,2pt)$)
+{$i=1,\ldots,N$};
+
+\end{tikzpicture}
+
+\end{document}
