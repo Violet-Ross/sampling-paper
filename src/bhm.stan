@@ -65,6 +65,11 @@ data {
   vector[J] psi_hi;               // first negative after the last positive
   real<lower=1> psi_shape;        // Beta(a, a) on psi_unit; 1 is the uniform
   real<lower=0> prior_sd;
+  // Prior centres of the three population means. Supplied by the driver so
+  // they follow the generating values instead of being fixed in this file.
+  real<lower=0> prior_mu_V;
+  real<lower=0> prior_mu_delt_p;
+  real<lower=0> prior_mu_delt_c;
 }
 
 parameters {
@@ -101,19 +106,19 @@ transformed parameters {
 }
 
 model {
-  mu_V      ~ normal(6, prior_sd);
-  mu_delt_p ~ normal(6, prior_sd);
-  mu_delt_c ~ normal(4, prior_sd);
+  mu_V      ~ normal(prior_mu_V,      prior_sd);
+  mu_delt_p ~ normal(prior_mu_delt_p, prior_sd);
+  mu_delt_c ~ normal(prior_mu_delt_c, prior_sd);
 
   // prior_sd divided by the prior centre of the matching mean. witch_toy.stan
   // puts normal(0, prior_sd) on a NATURAL-scale spread, which at the prior
   // centre implies a log-scale spread of prior_sd / centre. Dividing here
   // reproduces that implied width, so this arm differs from the baseline in
   // GEOMETRY ONLY. Without the divisor the reparameterised arm would also
-  // carry a ~6x wider prior and the experiment would confound the two.
-  sigma_log_V      ~ normal(0, prior_sd / 6);
-  sigma_log_delt_p ~ normal(0, prior_sd / 6);
-  sigma_log_delt_c ~ normal(0, prior_sd / 4);
+  // carry a much wider prior and the experiment would confound the two.
+  sigma_log_V      ~ normal(0, prior_sd / prior_mu_V);
+  sigma_log_delt_p ~ normal(0, prior_sd / prior_mu_delt_p);
+  sigma_log_delt_c ~ normal(0, prior_sd / prior_mu_delt_c);
 
   V_raw      ~ normal(0, 1);
   delt_p_raw ~ normal(0, 1);

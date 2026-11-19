@@ -57,7 +57,7 @@ abstract
 Viral kinetics, changes in the concentration of virus within an infected individual over time, were first modeled in the 1990s, for the study of HIV \cite{perelson1996hiv}.
 Since then, viral kinetics (VK) models have proved useful for a variety of tasks.
 VK modeling can be used to address clinical questions, such as explaining why recipients of a new hepatitis C treatment exhibited high rates of drug-resistance \cite{rong2012modeling}, as well as epidemiological questions, such as determining optimal testing and isolation strategies for population-level management of SARS-CoV-2 \cite{kissler2021viral}.  
-Modeling viral kinetics also allows us to understand how infections with the same virus might vary depending factors such as the variant \cite{russell2024combined}, the vaccination status of the host \cite{ke2022longitudinal}, whether the host has been infected before \cite{kissler2023viral}, and demographic characteristics of the host, such as age \cite{russell2024combined}.
+Modeling viral kinetics also allows us to understand how infections with the same virus might vary depending on factors such as the variant \cite{russell2024combined}, the vaccination status of the host \cite{ke2022longitudinal}, whether the host has been infected before \cite{kissler2023viral}, and demographic characteristics of the host, such as age \cite{russell2024combined}.
 
 A fundamental challenge of building VK models is the amount and type of data needed, and the cost associated with collecting it.
 If too few samples are collected, the model will struggle to accurately estimate the dynamics of viral concentration, producing poor estimates of epidemiological parameters.
@@ -73,12 +73,12 @@ Naturally ocurring infections can also be captured by sampling from a community-
 This approach, as it has been implemented thus far [CITE], has the highest sampling and assaying costs, recording viral concentrations from all participants at a high frequency over an extended period of time.
 Though this approach has been costly, it has also produced excellent data for building VK models [CITE].
 
-Gold-standard data for VK modeling emerged as a result of surveillance efforts during the SARS-CoV-2 pandemic, enabling an influx of VK modeling research which was crucial to improving understanding of the pathogen and making public health decisions [CITE, CITE, CITE].
-This data was collected from a community-based longitudinal cohort.
+Gold-standard data for VK modeling emerged as a result of surveillance efforts during the SARS-CoV-2 pandemic, enabling an influx of VK modeling research which was crucial to improving understanding of the pathogen and making public health recommendations \cite{singanayagam2022community,kissler2021viral,ke2022longitudinal}.
+This data was collected from community-based longitudinal cohorts.
 Existing data that has been collected from as many participants and with as much frequency as the COVID-era data is rare.
 We aim to build VK models that are as accurate as those built on the extensive COVID surveillance data — without requiring costly data collection.
 Optimal design for VK modeling has been explored in previous work — Canini and Carrat investigated the optimal number of participants, number of samples per participant, and temporal distribution of these samples for fitting a mechanistic model of influenza \cite{canini2011viral}.
-\vlr{Other work on efficient sampling for building viral kinetics has explored...} \cite{}.
+Han and Chaloner analytically prove sampling times for the most precise parameter estimates of exponential decay models, highlighting their applicability for viral kinetics modeling \cite{han2003d}.
 
 % To optimally identify infections in a population, our approach employs sample pooling. 
 % Sample pooling was first proposed by Robert Dorfman as a strategy for syphilis screening in the United States military during World War II. 
@@ -93,16 +93,16 @@ We propose an adaptive approach to fitting a generalized phenomonological model 
 This approach consists of three main stages.
 In the first stage, we use pooling to indentify individuals in the cohort who do not experience infection with the pathogen of interest during the window of sampling.
 In the second stage, we use prior knowledge of typical infection durations to efficiently find infections in particpant-time space.
-In the third stage, we use an active learning approach to fit a phenomonological VK model, maximizing information gain while minimizing assay costs.
-We fit a two-phase piecewise linear model of VK with parameters drawn from a Bayesian hierarchical model, an approach which has been used to model viral kinetics in work on SARS-CoV-2 \cite{kissler2023viral} and \vlr{other viruses} \cite{}.
+In the third stage, we use an entropy-maximization approach to adaptively fit a phenomonological VK model, maximizing information gain while minimizing assay costs.
+We fit a piecewise linear model of VK with parameters drawn from a Bayesian hierarchical model, an approach which has been used to model viral kinetics in work on SARS-CoV-2 \cite{kissler2023viral} and has recently been extended for modeling of other viruses \cite{eales2026modeling, sauter2026roles}.
 
 \section{Parameterization}
 The typical output of a quantitative polymerase chain reaction (PCR) assay is the cycle threshold.
 The cycle threshold (Ct) of a sample is the number of amplification cycles needed for the virus to be detected.
 
 We seek to model the viral RNA concentration of samples over time.
-Viral RNA concentration can be used to describe or estimate information like viral load and infectiousness \cite{?}.
-The cycle threshold of a sample is roughly the negative logarithm of the viral RNA concentration \cite{?}.
+Viral RNA concentration can be used to describe or estimate information like viral load and infectiousness  \cite{tom2020interpret}.
+The cycle threshold of a sample is roughly the negative logarithm of the viral RNA concentration.
 The limit of detection (LOD) of an assay is the viral RNA concentration below which samples will be identified as negative.
 For many infectious agents, viral RNA concentration increases during proliferation and decreases during clearance approximately exponentially.
 This corresponds to a two-phase linear model of Ct with negative slope during proliferation and positive slope during clearance.
@@ -114,16 +114,13 @@ When the viral RNA concentration is less than the LOD, $\omega$ is equal to 0.
 Letting $\omega$ be the difference of viral concentration and LOD allows us to omit LOD from our equations.
 
 Observed values of $\omega$ increase linearly with $t$ until a peak value is reached and then decrease linearly with $t$.
-Two-phase (or segmented) regression is often used to fit models to data of this shape \cite{?}.
+Two-phase (or segmented) regression can be used to fit models to data of this shape.
 A traditional parameterization of the two-phase linear model uses four parameters, a y-intercept $\alpha$, two slopes $\beta_1$ and $\beta_2$, and a breakpoint $\psi$ that specifies the time of peak concentration.
 When modeling viral kinetics, the value of $\alpha$ is simply equal to the LOD, so that $t = 0$ is the beginning of detectable infection.
 The equation for $\omega$ is
 \begin{equation*}
     \omega(t) = \beta_1 t + \beta_2 t \mathbbm{1}\{t > \psi\}.
 \end{equation*}
-A depiction of the tent function is given in Figure \ref{?}.
-
-\vlr{fig of tent func here}
 
 The two-phase linear model (sometimes called the ``tent function'') only learns from positive values.
 If the infected period is densely sampled, this may be an appropriate choice of parameterization.
@@ -136,7 +133,7 @@ The following model accounts for the pre- and post-infection periods:
         \begin{cases}
             0 & t < \psi_1 \\
             (t - \psi_1) \frac{V}{\psi_2 - \psi_1} & \text{if } \psi_1 \leq t < \psi_2 \\
-            V - (t - \psi_2) \frac{V}{\psi_3 - \psi_2}   & \text{if } \psi_2 \leq t < \psi_2 \\
+            V - (t - \psi_2) \frac{V}{\psi_3 - \psi_2}   & \text{if } \psi_2 \leq t < \psi_3 \\
             0 & \psi_3 \leq t.
         \end{cases}
 \end{equation}
@@ -149,14 +146,15 @@ Then the model is given by
 \begin{equation}\label{eqn:reindex-witch}
     \omega(t) =
         \begin{cases}
-            0 & t < \psi_1 \\
-            V(t + \frac{t}{\Delta_p}) & \text{if } -\Delta_p \leq t < 0 \\
+            0 & t < -\Delta_p \\
+            V(1 + \frac{t}{\Delta_p}) & \text{if } -\Delta_p \leq t < 0 \\
             V(1 - \frac{t}{\Delta_c})   & \text{if } 0 \leq t < \Delta_c \\
             0 & \Delta_c \leq t.
         \end{cases}
 \end{equation}
-Here, $\Delta_p$ is the duration of the duration of the proliferation phase and $\delta_c$ is the duration of the clearance phase.
+Here, $\Delta_p$ is the duration of the proliferation phase and $\Delta_c$ is the duration of the clearance phase.
 This is the parameterization we employ.
+Figure \ref{fig:witch} illustrates this parameterization.
 
 \begin{figure}
     \centering 
@@ -165,12 +163,12 @@ This is the parameterization we employ.
 \end{figure}
 
 A plate diagram for our Bayesian hierarchical model (BHM) is given by Figure \ref{fig:bhm}.
-In this BHM, each infection $i$ has its own parameters $V^{(i)}$, $\delta_p^{(i)}$, and $\delta_c^{(i)}$, each of which is drawn from a population-level distribution with center and spread $\mu$ and $\sigma$.
-The population-level distributions are positive and non-centered \cite{?}.
+In this BHM, each infection $i$ has its own parameters $V^{(i)}$, $\Delta_p^{(i)}$, and $\Delta_c^{(i)}$, each of which is drawn from a population-level distribution with center and spread $\mu$ and $\sigma$.
+The population-level distributions are positive and non-centered.
 An observation from an infection at time $t$ is drawn from a normal distribution centered at $\omega(t)$ with standard deviation $\sigma_\epsilon$.
 Each infection also has a parameter $\psi^{(i)}$ which is used to reindex the data so that it is approximately centered at the peak of the infection.
-For each infection, $\psi^{(i)}$ is drawn from a distribution that is weakly centered at the \vlr{[decide here: center of interval or highest observed viral concentration?]}
-
+For each infection, $\psi^{(i)}$ is drawn from a distribution that is weakly centered at the midpoint of the infected window of record.
+Detailed information on the distributions of each parameter is available in Appendix \ref{appendix:parameterization}.
 
 
 \begin{figure}
@@ -180,7 +178,7 @@ For each infection, $\psi^{(i)}$ is drawn from a distribution that is weakly cen
 \end{figure}
 
 \section{Study Design and Optimized Assay Approaches}
-We develop methods for fitting a viral kinetics model given a set of \vlr{(is there a word more general than "saliva" that I can use here?)} samples collected from $\numpeople$ individuals over $\numdays$ days.
+We develop methods for fitting a viral kinetics model given a set of  samples collected from $\numpeople$ individuals over $\numdays$ days.
 These samples can be arranged into an $\numpeople$ by $\numdays$ matrix $\samplematrix$, where an entry $\samplematrixentry_{i,j}$ is the sample collected from participant $i$ on day $j$.
 We say that $\samplematrixentry_{i,j} > 0$ if individual $i$ had viral RNA concentration above the limit of detection (LOD) of our assay on day $j$.
 Otherwise, $\samplematrixentry_{i,j} = 0$. 
@@ -200,17 +198,17 @@ That is, only a small proportion of the assays perfomed in the complete assaying
 This suggests that we can locate the infections within $\samplematrix$ using far fewer than the $\numpeople * \numdays$ assays required by the complete testing approach.
 But how many tests are actually needed, and how should we distribute them among the samples?
 
-\subsection{Infection Discovery}
+\subsection{Infection Discovery}\label{sec:methods-infxdiscovery}
 The problem of infection discovery amounts to identifying continuous sequences of positive entries within the rows of $\samplematrix$.
 We need not record the entire infection from start to finish, but rather identify at least one of the positive values within it.
 This can be achieved by the following algorithm.
 
 Suppose you are given the matrix $\samplematrix$ with unobserved entries and cumulative incidence $\incidence$.
 Assume that the duration of each infection $\li$ is drawn from some continuous positive distribution with practical lower bound $\lo$ such that $\prob(\li < \lo) < \alpha$ for some small constant $\alpha$.
-\vlr{(how are we doing this in sims since we're working in discrete time?)}
 
-The algorithm proceeds as follows. \vlr{(a diagram might be useful for this)}
-Within each row: pool the samples and apply a single assay to the pool \vlr{(gotta show that we'll stay above LO)}. 
+
+The algorithm proceeds as follows.
+Within each row: pool the samples and apply a single assay to the pool. 
 For each row $i$ on which the assay returns a negative result, set $\samplematrixentry_{i,j} = 0$ for all $j$.
 This row does not contain an infection and can now be removed from consideration.
 For each row $i$ on which the assay returned a positive result, individually assay entries at an interval of $\lo$.
@@ -218,18 +216,19 @@ That is, assay samples $\samplematrixentry_{i,0}, \samplematrixentry_{i,\lo}, \s
 
 Both the accuracy of this approach and the cost reduction it offers can be expressed in closed form.
 We quantify the accuracy of the infection discovery algorithm by the probability that an arbitrary trajectory is not missed.
-An infection is missed if none of the samples taking during its duration are assayed by the algorithm.
+An infection is missed if none of the samples taken during its duration are assayed by the algorithm.
 The probability that an arbitrary infection $i$ is missed by the infection discovery algorithm is described by the inequality
 \begin{equation}\label{eqn:miss}
-    \prob(\text{miss } i) < \alpha - \frac{\alpha}{\lo} \expec \left[ \li | \li < \lo  \right]
+    \prob(\text{miss } i) < \alpha - \frac{\alpha}{\lo} \expec \left[ \li | \li < \lo  \right].
 \end{equation}
-The cost $C$ of running the infection discovery algorithm over matrix $\samplematrix$ is 
+Because the pooling step identifies all rows containing infections, if an infection is missed by interval testing, it can be identified by performing interval testing on that row again, but at a finer grain. 
+The expected cost $C$ of running the infection discovery algorithm over matrix $\samplematrix$ is 
 \begin{equation}\label{eqn:cost}
-    C = \numpeople \numdays (\frac{1}{\numdays} + \frac{c}{\lo}).
+    \expec[C] = \numpeople \numdays \assaycost (\frac{1}{\numdays} + \frac{c}{\lo}).
 \end{equation}
 This reduces the cost of the brute force approach by a factor of $(\frac{1}{\numdays} + \frac{c}{\lo})$.
 Infection discovery gets cheaper as the number of individuals sampled increases and the ratio of the cumulative incidence to the sampling interval decreases.
-Derivations for Equations \ref{eqn:miss} and \ref{eqn:cost} can be found in Section \ref{sec:infx-disc}.
+Derivations for Equations \ref{eqn:miss} and \ref{eqn:cost} can be found in Appendix \ref{sec:infx-disc}.
 
 We fit the BHM to the data obtained from infection discovery using the Stan statistical software, which performs Hamiltonian Monte Carlo.
 
@@ -247,7 +246,7 @@ The assay-fit cycle can be performed iteratively, at the cost of reagants and bo
 
 The central choice in designing the adaptive sampling approach is the choice of acquisition function.
 Our adaptive sampling algorithm assays at the timestamp which maximizes the differential entropy of the posterior predictive.
-Let $\theta^{(i)} = (V^{(i)} , \Delta_p^{(i)}, \Delta_c^{(i)}, \phi^{(i)}, \sigma_\epsilon)$ be the vector containing the infection-level parameters for infection $i$, along with $\sigma_\epsilon$.
+Let $\theta^{(i)} = (V^{(i)} , \Delta_p^{(i)}, \Delta_c^{(i)}, \psi^{(i)}, \sigma_\epsilon)$ be the vector containing the infection-level parameters for infection $i$, along with $\sigma_\epsilon$.
 The posterior predictive distribution, $p(y_t^{(i)} | \{y\})$, computes the probability that the observed value of infection $i$ at time $t$ is $y_t^{(i)}$, given all observations in the observed data.
 Then $p(y_t^{(i)} | \{y\}) = \int_{\theta^{(i)}} P(y_t^{(i)} | \theta^{(i)})P(\theta^{(i)} | \{y\}) d\theta^{(i)}$ which can be computed by numerical integration over the draws produced by HMC.
 
@@ -344,6 +343,31 @@ which gives our upper bound on entropy of the posterior predictive
 \subsection{Infection Discovery}
 
 \subsection{Model Fitting}
+We evaluate the performance of our reduced-cost assaying approach with two experiments.
+In the first, we examine the relationship between the size of the assaying interval, the informativeness of the prior, and the fit obtained via Monte Carlo fitting of the BHM.
+In the second, we investigate the impact of adaptive assaying on the fit of sparsely assayed sample matrices.
+
+In the first experiment, 10 synthetic sample matrices are generated, each of which corresponds to an iteration over which we will average the results. 
+The true parameters used for generating the matrices are based on estimates of the viral kinetics parameters of SARS-CoV-2 [CITE].
+When generating synthetic sample matrices on which to test our assay approaches, we follow the BHM as a generative model.
+The one exception is the observation error outside the infectious period.
+We assume that when assaying a sample outside that period, the returned value will be 0, with no normally distributed error.
+This assumption is not reflected in the BHM used for fitting, as it would create a point mass at 0, making fitting via HMC difficult.
+
+The next step is collecting infection data from the sample matrix, via the infection discovery algorithm described in Section\ref{sec:methods-infxdiscovery}.
+When performing infection discovery on synthetic data, we assume arbitrarily many samples can be pooled together without sacrificing the accuracy of the binary test result.
+Finally, we fit the obtained infection data to the BHM via HMC in Stan. 
+
+Figure \ref{fig:nonadaptive_results} shows the results of this experiment.
+With some stochastic variation, we observe a general increase in the magnitude of the signed bias as the sampling interval grows wider.
+Perhaps suprisingly, despite the fact that the priors used for this experiment are centered on the correct values from which the data was generated, less informative priors (that is, priors with higher values of $\sigma_{\text{prior}}$) generally correspond to slightly lower bias.
+This may be because less informative priors enable more thorough exploration of the parameter space.
+
+Examining a sample of draws produced by least biased iteration of HMC shows that they are all closely aligned with the underlying true trajectories.
+The most biased iteration shows more noisy alignment with the underlying truth, as well as some draws which are quite different from the actual trajectory.
+In these ``double peaked'' panels, the draws representing the incorrect trajectory represent roughly 25\% of the 100 randomly sampled HMC draws.
+Since the model is fit using 4 chains, these draws likely all correspond to the same unfortunate chain, which was initialized in an unlucky position and increased estimates of sampling error to compensate for it, rather than converging to the true trajectory.
+Convergence diagnostics, available in Figure \ref{fig:nonadaptive-supplementary} confirm that in this iteration of fitting, the chains were poorly mixed.
 
 \begin{figure}
     \centering 
@@ -353,7 +377,6 @@ which gives our upper bound on entropy of the posterior predictive
     Then for 15 combinations of $\sigma_{\text{prior}}$ and $\ell_0$ values, infection discovery is performed and the model is fit to its output.
     The mean signed bias is then averaged over the 10 iterations.
     For the cells with the highest and lowest bias, randomly chosen example infections and a sample of draws from the HMC fitting process are plotted.} \label{fig:nonadaptive_results}
-    
 \end{figure}
 
 \begin{figure}
@@ -389,7 +412,7 @@ If less than 5\% of the differences fall on a given side of 0, the peaks of the 
 To investiate the impact of reduced assay rate on an investigator's ability to answer the proposed question, we conducted the following experiment.
 We generated a synthetic matrix of infections, where the vaccination status of an individual is determined randomly.
 There are two separate models from which we generate the viral kinetics for vaccinated and unvaccinated individuals.
-The two models are identical except for the distributions from which peak viral load is drawn, which have different means.
+The two models are identical except for the distributions from which peak viral load is drawn, which have different medians (5 for vaccinated individuals and 6 for unvaccinated individuals).
 If we assay every sample in the matrix, we can correctly determine that the two groups have different underlying peak viral load distributions.
 
 \begin{figure}
@@ -400,17 +423,16 @@ If we assay every sample in the matrix, we can correctly determine that the two 
 
 
 Figure \ref{fig:question1} demonstrates how our ability to identify this difference varies with the interval at which we assay participants.
-The complete details of this simulation are available in Appendix [BLAH].
-Notably, for values of $\lo$ less than or equal to 6, we are able to correctly detect the difference in the peak viral load distributions of the two groups.
-That is, with $1/6$ as many assays, the two groups can still be distinguished.
-We also plot the $\beta_1$ RMSE of the two fit models for varying $\lo$.
-For some higher $\lo$ values for which the viral load question is correctly answered, the RMSE of the actual parameter estimates are nontrivial.
+Notably, for values of $\lo$ less than or equal to 15, we are able to correctly detect the difference in the peak viral load distributions of the two groups.
+That is, with $1/15$ as many assays, the two groups can still be distinguished.
+We also plot the signed error of $\mu_V$ (posterior mean minus the generating value) for the two fit models for varying $\lo$.
+For some higher $\lo$ values for which the viral load question is correctly answered, the error of the actual parameter estimates is nontrivial.
 Therefore, if one wanted to both determine whether unvaccinated and vaccinated populations have significantly different peak viral loads \textit{and} provide accurate estimates of what those peak viral loads are, it would be advantageous to select a smaller sampling interval.
-We note, however, that this interval length need not be 1; for $\lo = 3$, the RMSEs of both the model fit to U and the model fit to V are similar to the RMSEs acheived with complete assaying.
+We note, however, that this interval length need not be 1; for $\lo = 4$, the errors of both the model fit to U and the model fit to V are similar to the errors achieved with complete assaying.
 
 This simulation demonstrates that key pathogen kinetics questions can be answered even when the parameter estimates are noisy.
 This fact allows for a more extensive reduction in the cost of data collection.
-Still, for those questions that require more accurate estimates of epidemiological parameters, costs can be reduced (in this case, by a factor of 3), without sacrificing performance.
+Still, for those questions that require more accurate estimates of epidemiological parameters, costs can be reduced (in this case, by a factor of 4), without sacrificing performance.
 
 In the second case study, we consider the task of selecting the optimal length of isolation for individuals infected with a given pathogen.
 To select isolation length, we optimize over testing effectiveness (TE) as defined by Middleton et al. in \cite{BLAH}.
@@ -440,6 +462,15 @@ We thank Stephen Kissler for helpful discussions.
 
 \section{Appendix}
 
+\subsection{Parameterization}\label{appendix:parameterization}
+An observation for individual $i$ at time $t$, denoted $Y_t^{(i)}$, is drawn from a Normal distribution with mean $\omega(t)$ with standard deviation $\sigma_\epsilon$.
+The value of $\omega(t)$ is computed using individual $i$'s individual-level parameters $V^{(i)}, \Delta_p^{(i)}, \Delta_c^{(i)}$, and $\psi^{(i)}$.
+For each infected individual, $V^{(i)}$ is drawn from a log-normal distribution, $\log V^{(i)} \sim \mathcal{N}\left(\log \mu_V, \, (\sigma_V / \mu_V)^2\right)$, so that $\mu_V$ is the median peak viral load across infections and $\sigma_V$ is, to first order, the standard deviation of peak viral load across infections.
+The distributions over $\Delta_p^{(i)}$ and $\Delta_c^{(i)}$ are symmetrically defined.
+The centering parameter $\psi^{(i)}$ is drawn from a beta distribution centered at the midpoint of the infected window of record $s^{(i)}$, and upper- and lower- bounded to remain within that interval.
+The population-level parameters $\mu_V, \mu_{\Delta_p^{(i)}}, \mu_{\Delta_c^{(i)}}$, and $\sigma_\epsilon$ are drawn from normal priors lower-bounded at 0.
+The population-level parameters $\sigma_V, \sigma_{\Delta_p^{(i)}}$, and $\sigma_{\Delta_c^{(i)}}$ are drawn from half-normals.
+
 \subsection{Accuracy and Cost of Infection Discovery}\label{sec:infx-disc}
 For an arbitrary infection $i$ contained in sample matrix $\samplematrix$, the probability the infection discovery algorithm misses $i$ can be expressed as follows.
 \begin{equation*}
@@ -457,7 +488,18 @@ For an arbitrary infection $i$ contained in sample matrix $\samplematrix$, the p
 We now consider the cost of performing infection discovery on $\samplematrix$.
 Suppose each assay costs $\assaycost$.
 Then the cost of the pooling step of the infection discovery algorithm is $\assaycost \numpeople$.
-The cost of the interval sampling step is 
+Let $\rho$ be the number of positive rows, as identified by the pooling step.
+Then the cost of interval sampling on a single row is $\frac{\numdays}{\lo}\assaycost$, so the total cost of infection discovery is
+\begin{equation*}
+    C = \numpeople \assaycost + \rho \frac{\numdays}{\lo}\assaycost.
+\end{equation*}
+The expected cost of infection discovery is then
+\begin{equation*}
+    \begin{split}
+        \expec[C] &= \numpeople \assaycost + \numpeople c \frac{\numdays}{\lo}\assaycost \\
+        &= \numpeople \numdays \assaycost (\frac{1}{\numdays} + \frac{c}{\lo}).
+    \end{split}
+\end{equation*}
 
 \subsection{Model Fitting}
 

@@ -1,0 +1,2 @@
+task_id,l_0,true_v_vax,true_v_unvax,prior_sd,prior_mu_V,v_mu_V_bias,v_mu_delt_p_bias,v_mu_delt_c_bias,v_mu_duration_bias,v_n_fitted,v_n_assays,v_max_rhat,v_n_divergent,u_mu_V_bias,u_mu_delt_p_bias,u_mu_delt_c_bias,u_mu_duration_bias,u_n_fitted,u_n_assays,u_max_rhat,u_n_divergent,n_missed,peak_diff_mean,peak_diff_sd
+16,16,5,6,2,5.5,-0.7800950382144675,1.706893263818467,1.4283215015992006,3.1352147654176674,63,187,5082.495435144994,0,-0.46457440689512725,2.112244062667351,1.2547261979706361,3.366970260637987,59,176,4543.558442448776,0,23,-1.3155206313193402,0.8943358865730272

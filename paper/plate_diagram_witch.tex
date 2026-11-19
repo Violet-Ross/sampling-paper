@@ -1,31 +1,3 @@
-% Plate diagram for the witch-hat parameterization in src/witch_toy.stan.
-%
-% Replaces the slope-and-breakpoint form shown in plate_diagram.tex, whose
-% nodes (mu_alpha, mu_beta1, mu_beta2, mu_psi) match src/viral_bhm.stan.
-%
-% Correspondence to src/witch_toy.stan, in STATISTICAL form -- the .stan file
-% writes each of these non-centered, which is a sampler implementation detail
-% and is deliberately not drawn:
-%
-%   V^(i)        ~ Lognormal(log mu_V,      sigma_V / mu_V)
-%   delta_p^(i)  ~ Lognormal(log mu_dp,     sigma_dp / mu_dp)
-%   delta_c^(i)  ~ Lognormal(log mu_dc,     sigma_dc / mu_dc)
-%   psi^(i)      ~ Uniform(0, s^(i))
-%   Y_t^(i)      ~ Normal(m(x_t^(i) - psi^(i)), sigma_eps)
-%
-% where m(.) is the witch hat, rising over delta_p to a peak of V and falling
-% over delta_c, and 0 outside that window.
-%
-% Two structural departures from plate_diagram.tex:
-%
-%   1. psi carries NO population hierarchy. It is a registration nuisance
-%      whose flat prior runs over each individual's own record span, so its
-%      parent is the observed span s^(i) (shaded, known) rather than a
-%      mu/sigma pair.
-%   2. sigma_eps is a SINGLE GLOBAL scalar, so it sits outside the subject
-%      plate. The old figure's per-subject rho, with hyperparameters mu_rho
-%      and sigma_rho, has no counterpart anywhere in src/*.stan.
-
 \documentclass[tikz,border=10pt]{standalone}
 
 \usepackage{tikz}
